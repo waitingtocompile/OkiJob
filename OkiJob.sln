@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31605.320
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OkiJobAPI", "OkiJobAPI\OkiJobAPI.csproj", "{3726A2B7-3CDD-4BAA-8AF2-4AD287C8E00B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3726A2B7-3CDD-4BAA-8AF2-4AD287C8E00B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3726A2B7-3CDD-4BAA-8AF2-4AD287C8E00B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3726A2B7-3CDD-4BAA-8AF2-4AD287C8E00B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3726A2B7-3CDD-4BAA-8AF2-4AD287C8E00B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5CFDD028-8B67-4858-8106-DDCFE83E39BB}
+	EndGlobalSection
+EndGlobal
