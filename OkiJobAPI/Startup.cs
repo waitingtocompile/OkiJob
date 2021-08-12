@@ -10,7 +10,9 @@ using Microsoft.Extensions.Logging;
 using OkiJobAPI.Data;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace OkiJobAPI
@@ -32,6 +34,19 @@ namespace OkiJobAPI
 			services.AddDatabaseDeveloperPageExceptionFilter();
 
 			services.AddControllers();
+
+			services.AddSwaggerGen(c =>
+			{
+				c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+				{
+					Version = "v1",
+					Title = "OkiJob API",
+				});
+
+				string xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+				string xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+				c.IncludeXmlComments(xmlPath);
+			});
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -41,6 +56,13 @@ namespace OkiJobAPI
 			{
 				app.UseDeveloperExceptionPage();
 			}
+
+			app.UseSwagger();
+
+			app.UseSwaggerUI(c =>
+			{
+				c.SwaggerEndpoint("v1/swagger.json", "OkiJob API V1");
+			});
 
 			app.UseHttpsRedirection();
 

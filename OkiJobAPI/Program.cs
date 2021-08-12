@@ -30,18 +30,16 @@ namespace OkiJobAPI
 
 		public static void CreateDbIfNotExists(IHost host)
 		{
-			using(IServiceScope scope = host.Services.CreateScope())
-			{
-				IServiceProvider serviceProvider = scope.ServiceProvider;
+			using IServiceScope scope = host.Services.CreateScope();
+			IServiceProvider serviceProvider = scope.ServiceProvider;
 
-				try
-				{
-					DbInitializer.Initialize(serviceProvider.GetRequiredService<SharedContext>());
-				}
-				catch(Exception ex)
-				{
-					serviceProvider.GetRequiredService<ILogger<Program>>().LogError(ex, "An error occured creating the DB");
-				}
+			try
+			{
+				DbInitializer.Initialize(serviceProvider.GetRequiredService<SharedContext>());
+			}
+			catch (Exception ex)
+			{
+				serviceProvider.GetRequiredService<ILogger<Program>>().LogError(ex, "An error occured creating the DB");
 			}
 		}
 	}
