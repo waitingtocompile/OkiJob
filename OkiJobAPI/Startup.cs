@@ -37,11 +37,7 @@ namespace OkiJobAPI
 
 			services.AddSwaggerGen(c =>
 			{
-				c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
-				{
-					Version = "v1",
-					Title = "OkiJob API",
-				});
+				c.SwaggerDoc("OkiJob", new Microsoft.OpenApi.Models.OpenApiInfo());
 
 				string xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
 				string xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
@@ -57,11 +53,15 @@ namespace OkiJobAPI
 				app.UseDeveloperExceptionPage();
 			}
 
-			app.UseSwagger();
+			app.UseSwagger(c =>
+			{
+				c.RouteTemplate = "docs/{documentname}/docs.json";
+			});
 
 			app.UseSwaggerUI(c =>
 			{
-				c.SwaggerEndpoint("v1/swagger.json", "OkiJob API V1");
+				c.SwaggerEndpoint("/docs/OkiJob/docs.json", "OkiJob API");
+				c.RoutePrefix = "docs";
 			});
 
 			app.UseHttpsRedirection();

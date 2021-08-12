@@ -23,7 +23,7 @@ namespace OkiJobAPI.Data
 
 			modelBuilder.Entity<MaterialCost>().HasKey(m => new { m.ShipID, m.MaterialID });
 			modelBuilder.Entity<MaterialCost>().HasOne(m => m.Ship).WithMany(s => s.MaterialCosts).HasForeignKey(m => m.ShipID);
-			modelBuilder.Entity<MaterialCost>().HasOne(m => m.Material).WithMany(m => m.ShipCosts).HasForeignKey(m => m.MaterialID);
+			modelBuilder.Entity<MaterialCost>().HasOne(m => m.Material).WithMany(m => m.MaterialCosts).HasForeignKey(m => m.MaterialID);
 
 			modelBuilder.Entity<Ship>().ToTable("Ships");
 			modelBuilder.Entity<Material>().ToTable("Materials");

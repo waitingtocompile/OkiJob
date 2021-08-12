@@ -13,7 +13,7 @@ namespace OkiJobAPI.Models
 		public string Name { get; set; } = null!;
 		public int Price { get; set; }
 
-		public ICollection<MaterialCost> ShipCosts { get; set; } = null!;
+		public ICollection<MaterialCost> MaterialCosts { get; set; } = null!;
 
 	}
 }

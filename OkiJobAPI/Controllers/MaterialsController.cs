@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OkiJobAPI.Data;
 using OkiJobAPI.Models;
@@ -9,18 +10,47 @@ using System.Threading.Tasks;
 
 namespace OkiJobAPI.Controllers
 {
-	public class GetMaterialDTO
+	public class MaterialReducedDTO
 	{
 		public int ID { get; set; }
 		[StringLength(50)]
-		public string? Name { get; set; }
+		public string Name { get; set; } = null!;
 		public int Price { get; set; }
 
-		public static GetMaterialDTO FromMaterial(Material material)
+		public static MaterialReducedDTO FromMaterial(Material material)
 		{
-			return new GetMaterialDTO() {ID = material.ID, Name = material.Name, Price = material.Price };
+			return new MaterialReducedDTO() {ID = material.ID, Name = material.Name, Price = material.Price };
+		}
+	}
+
+	public class MaterialWithCostsDTO
+	{
+		public class MaterialMaterialCostDTO
+		{
+			public int Amount { get; set; }
+			public int ShipID { get; set; }
+			public string ShipName { get; set; } = null!;
 		}
 
+		public int ID { get; set; }
+		[StringLength(50)]
+		public string Name { get; set; } = null!;
+		public int Price { get; set; }
+
+		public ICollection<MaterialMaterialCostDTO> ShipCosts {get; set;} = null!;
+
+
+		public static async Task<MaterialWithCostsDTO> FromMaterial(Material material, SharedContext context)
+		{
+			await context.Entry(material).Collection(m => m.MaterialCosts).LoadAsync();
+			return new MaterialWithCostsDTO() { ID = material.ID, Name = material.Name, Price = material.Price, ShipCosts =  (await Task.WhenAll(material.MaterialCosts.Select(c => FromCost(c, context)))).ToList() };
+		}
+
+		public static async Task<MaterialMaterialCostDTO> FromCost(MaterialCost cost, SharedContext context)
+		{
+			await context.Entry(cost).Reference(c => c.Ship).LoadAsync();
+			return new MaterialMaterialCostDTO() { Amount = cost.Amount, ShipID = cost.ShipID, ShipName = cost.Ship.Name };
+		}
 	}
 
 	[Route("Materials")]
@@ -35,32 +65,48 @@ namespace OkiJobAPI.Controllers
 		}
 
 
+		
+
 		/// <summary>
 		/// Get a list of all materials and their prices
 		/// </summary>
 		[HttpGet]
-		public async Task<ActionResult<IEnumerable<GetMaterialDTO>>> GetMaterials()
+		public async Task<ActionResult<IEnumerable<MaterialReducedDTO>>> GetMaterials()
 		{
-			return await _context.Materials.Select(m => GetMaterialDTO.FromMaterial(m)).ToListAsync();
+			return await _context.Materials.Select(m => MaterialReducedDTO.FromMaterial(m)).ToListAsync();
 		}
 
 		/// <summary>
 		/// Get detailed information on a material, including it's price and all recorded ships that use it
 		/// </summary>
 		[HttpGet("{id}")]
-		public async Task<ActionResult<Material>> Get(int id)
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		public async Task<ActionResult<MaterialWithCostsDTO>> GetMaterial(int id)
 		{
-			return await _context.Materials.Where(m => m.ID == id).SingleAsync();
+			Material? material = await _context.Materials.FindAsync(id);
+			if(material is null)
+			{
+				return NotFound();
+			}
+			
+			return await MaterialWithCostsDTO.FromMaterial(material, _context);
 		}
 
 		/// <summary>
 		/// Update the price on a material
 		/// </summary>
-		/// <param name="id">Material ID</param>
-		/// <param name="value">New Price</param>
+		/// <param name="id" example="1">Material ID</param>
+		/// <param name="value" example="150">New Price</param>
+		/// <response code  ="204">Added</response>
+		/// <response code="400">Invalid value format</response>
+		/// <reponse code="404">Material does not exist</reponse>
 		/// <returns></returns>
-		[HttpPut("{id}")]
-		public async Task<IActionResult> Put(int id, [FromBody] int value)
+		[HttpPatch("{id}")]
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		public async Task<IActionResult> PatchMaterial(int id, [FromBody] int value)
 		{
 			Material? material = await _context.Materials.FindAsync(id);
 			if(material is null)
@@ -69,8 +115,8 @@ namespace OkiJobAPI.Controllers
 			}
 
 			material.Price = value;
-			_context.SaveChanges();
-			return Ok();
+			await _context.SaveChangesAsync();
+			return NoContent();
 		}
 	}
 }
