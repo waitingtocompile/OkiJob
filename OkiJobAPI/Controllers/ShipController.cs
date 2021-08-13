@@ -35,7 +35,7 @@ namespace OkiJobAPI.Controllers
 
 		public static async Task<ShipMaterialCostDTO> FromCost(MaterialCost cost, SharedContext context)
 		{
-			await context.Entry(cost).Reference(c => c.Material).LoadAsync();
+			if(cost.Material is null) await context.Entry(cost).Reference(c => c.Material).LoadAsync();
 			return new ShipMaterialCostDTO() { Amount = cost.Amount, MaterialID = cost.MaterialID, MaterialName = cost.Material!.Name };
 		}
 	}
@@ -52,7 +52,7 @@ namespace OkiJobAPI.Controllers
 
 		public static async Task<ShipWithCostsDTO> FromShip(Ship ship, SharedContext context)
 		{
-			await context.Entry(ship).Collection(s => s.MaterialCosts).LoadAsync();
+			if(ship.MaterialCosts is null) await context.Entry(ship).Collection(s => s.MaterialCosts).LoadAsync();
 			return new ShipWithCostsDTO() { ID = ship.ID, Name = ship.Name, Designer = ship.Designer, Description = ship.Description, MaterialCosts = (await Task.WhenAll(ship.MaterialCosts!.Select(c => ShipMaterialCostDTO.FromCost(c, context)))).ToList() };
 		}
 	}
@@ -92,7 +92,7 @@ namespace OkiJobAPI.Controllers
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		public async Task<ActionResult<ShipWithCostsDTO>> GetShip(int id)
 		{
-			Ship? ship = await _context.Ships.FindAsync(id);
+			Ship? ship = await _context.Ships.Include(s => s.MaterialCosts).ThenInclude(s => s.Material).SingleAsync(s => s.ID == id);
 			if(ship is null)
 			{
 				return NotFound();
