@@ -47,13 +47,13 @@ namespace OkiJobAPI.Controllers
 		public static async Task<ShipWithCostsDTO> FromShip(Ship ship, SharedContext context)
 		{
 			await context.Entry(ship).Collection(s => s.MaterialCosts).LoadAsync();
-			return new ShipWithCostsDTO() { ID = ship.ID, Name = ship.Name, Designer = ship.Designer, Description = ship.Description, MaterialCosts = (await Task.WhenAll(ship.MaterialCosts.Select(c => FromCost(c, context)))).ToList() };
+			return new ShipWithCostsDTO() { ID = ship.ID, Name = ship.Name, Designer = ship.Designer, Description = ship.Description, MaterialCosts = (await Task.WhenAll(ship.MaterialCosts!.Select(c => FromCost(c, context)))).ToList() };
 		}
 
 		public static async Task<ShipMaterialCostDTO> FromCost(MaterialCost cost, SharedContext context)
 		{
 			await context.Entry(cost).Reference(c => c.Material).LoadAsync();
-			return new ShipMaterialCostDTO() { Amount = cost.Amount, MaterialId = cost.MaterialID, MaterialName = cost.Material.Name };
+			return new ShipMaterialCostDTO() { Amount = cost.Amount, MaterialId = cost.MaterialID, MaterialName = cost.Material!.Name };
 		}
 
 	}
@@ -63,10 +63,6 @@ namespace OkiJobAPI.Controllers
 		public int MaterialID { get; set; }
 		public int Amount { get; set; }
 	}
-
-
-
-
 
 	[Route("Ships")]
 	[ApiController]

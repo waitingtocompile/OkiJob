@@ -14,6 +14,6 @@ namespace OkiJobAPI.Models
 		[StringLength(50)]
 		public string Designer { get; set; } = null!;
 		public string? Description { get; set; }
-		public ICollection<MaterialCost> MaterialCosts { get; set; } = null!;
+		public ICollection<MaterialCost>? MaterialCosts { get; set; }
 	}
 }

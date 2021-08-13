@@ -43,13 +43,13 @@ namespace OkiJobAPI.Controllers
 		public static async Task<MaterialWithCostsDTO> FromMaterial(Material material, SharedContext context)
 		{
 			await context.Entry(material).Collection(m => m.MaterialCosts).LoadAsync();
-			return new MaterialWithCostsDTO() { ID = material.ID, Name = material.Name, Price = material.Price, ShipCosts =  (await Task.WhenAll(material.MaterialCosts.Select(c => FromCost(c, context)))).ToList() };
+			return new MaterialWithCostsDTO() { ID = material.ID, Name = material.Name, Price = material.Price, ShipCosts =  (await Task.WhenAll(material.MaterialCosts!.Select(c => FromCost(c, context)))).ToList() };
 		}
 
 		public static async Task<MaterialMaterialCostDTO> FromCost(MaterialCost cost, SharedContext context)
 		{
 			await context.Entry(cost).Reference(c => c.Ship).LoadAsync();
-			return new MaterialMaterialCostDTO() { Amount = cost.Amount, ShipID = cost.ShipID, ShipName = cost.Ship.Name };
+			return new MaterialMaterialCostDTO() { Amount = cost.Amount, ShipID = cost.ShipID, ShipName = cost.Ship!.Name };
 		}
 	}
 
