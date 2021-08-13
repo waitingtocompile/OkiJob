@@ -3,12 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31605.320
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OkiJobAPI", "OkiJobAPI\OkiJobAPI.csproj", "{3726A2B7-3CDD-4BAA-8AF2-4AD287C8E00B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OkiJobAPI", "OkiJobAPI\OkiJobAPI.csproj", "{3726A2B7-3CDD-4BAA-8AF2-4AD287C8E00B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{0D809857-C666-44DE-B0AA-AF30AD147283}"
 	ProjectSection(SolutionItems) = preProject
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
+		Design notes.txt = Design notes.txt
 		license.txt = license.txt
 		ReadMe.MD = ReadMe.MD
 	EndProjectSection

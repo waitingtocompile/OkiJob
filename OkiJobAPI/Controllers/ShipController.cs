@@ -27,15 +27,21 @@ namespace OkiJobAPI.Controllers
 		}
 	}
 
+	public class ShipMaterialCostDTO
+	{
+		public int Amount { get; set; }
+		public int MaterialID { get; set; }
+		public string? MaterialName { get; set; }
+
+		public static async Task<ShipMaterialCostDTO> FromCost(MaterialCost cost, SharedContext context)
+		{
+			await context.Entry(cost).Reference(c => c.Material).LoadAsync();
+			return new ShipMaterialCostDTO() { Amount = cost.Amount, MaterialID = cost.MaterialID, MaterialName = cost.Material!.Name };
+		}
+	}
+
 	public class ShipWithCostsDTO
 	{
-		public class ShipMaterialCostDTO
-		{
-			public int Amount { get; set; }
-			public int MaterialId { get; set; }
-			public string MaterialName { get; set; } = null!;
-		}
-
 		public int ID { get; set; }
 		[StringLength(50)]
 		public string Name { get; set; } = null!;
@@ -47,17 +53,9 @@ namespace OkiJobAPI.Controllers
 		public static async Task<ShipWithCostsDTO> FromShip(Ship ship, SharedContext context)
 		{
 			await context.Entry(ship).Collection(s => s.MaterialCosts).LoadAsync();
-			return new ShipWithCostsDTO() { ID = ship.ID, Name = ship.Name, Designer = ship.Designer, Description = ship.Description, MaterialCosts = (await Task.WhenAll(ship.MaterialCosts!.Select(c => FromCost(c, context)))).ToList() };
+			return new ShipWithCostsDTO() { ID = ship.ID, Name = ship.Name, Designer = ship.Designer, Description = ship.Description, MaterialCosts = (await Task.WhenAll(ship.MaterialCosts!.Select(c => ShipMaterialCostDTO.FromCost(c, context)))).ToList() };
 		}
-
-		public static async Task<ShipMaterialCostDTO> FromCost(MaterialCost cost, SharedContext context)
-		{
-			await context.Entry(cost).Reference(c => c.Material).LoadAsync();
-			return new ShipMaterialCostDTO() { Amount = cost.Amount, MaterialId = cost.MaterialID, MaterialName = cost.Material!.Name };
-		}
-
 	}
-
 	public class NewMaterialCostDTO
 	{
 		public int MaterialID { get; set; }
@@ -103,13 +101,42 @@ namespace OkiJobAPI.Controllers
 			return await ShipWithCostsDTO.FromShip(ship, _context);
 		}
 
+		/// <summary>
+		/// Create a new ship with given costs.
+		/// </summary>
+		/// <param name="newShipDTO"></param>
+		/// <returns></returns>
+		[HttpPost]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		public async Task<ActionResult<ShipWithCostsDTO>> PostShip(ShipWithCostsDTO newShipDTO)
+		{
+			Ship ship = new Ship() { Name = newShipDTO.Name, Designer = newShipDTO.Designer, Description = newShipDTO.Description };
+			_context.Ships.Add(ship);
+			await _context.SaveChangesAsync();
+
+			if (CheckMaterialsExistAndNoDuplicates(newShipDTO.MaterialCosts.Select(c => c.MaterialID)) is BadRequestObjectResult res)
+			{
+				return res;
+			}
+
+			IEnumerable<MaterialCost> materialCosts = newShipDTO.MaterialCosts.Select(c => new MaterialCost() { MaterialID = c.MaterialID, ShipID = ship.ID, Amount = c.Amount });
+			_context.MaterialCosts.AddRange();
+			await _context.SaveChangesAsync();
+
+			return CreatedAtAction("GetShip", new { id = ship.ID }, await ShipWithCostsDTO.FromShip(ship, _context));
+
+		}
+
+
+
 		// TODO: ship general put/post/patch/delete endpoints
 
 		/// <summary>
 		/// Update the material costs of a ship.
 		/// </summary>
 		/// <remarks>
-		/// Note that ALL costs need to be included, any costs not featured in the list will be premanently deleted
+		/// Note that ALL costs need to be included, any costs not featured in the list will be permanently deleted
 		/// </remarks>
 		/// <response code  ="204">Added</response>
 		/// <response code="400">Invalid format, or unrecognized or duplicate material ID</response>
@@ -124,19 +151,9 @@ namespace OkiJobAPI.Controllers
 			if (ship is null)
 				return NotFound();
 
-			if(newCosts.Select(c => c.MaterialID).Distinct().Count() != newCosts.Count)
+			if(CheckMaterialsExistAndNoDuplicates(newCosts.Select(c => c.MaterialID)) is BadRequestObjectResult res)
 			{
-				return BadRequest("Duplicate material IDs detected");
-			}
-
-			var allMaterialIds = _context.Materials.Select(c => c.ID);
-			foreach(int idx in newCosts.Select(c => c.MaterialID))
-			{
-				var b = allMaterialIds.Contains(idx);
-				if (!allMaterialIds.Contains(idx))
-				{
-					return BadRequest($"Unkown Material ID {idx}");
-				}
+				return res;
 			}
 
 			foreach (MaterialCost oldCost in _context.MaterialCosts.Where(c => c.Ship == ship))
@@ -149,6 +166,25 @@ namespace OkiJobAPI.Controllers
 			
 			await _context.SaveChangesAsync();
 			return NoContent();
+		}
+
+		private BadRequestObjectResult? CheckMaterialsExistAndNoDuplicates(IEnumerable<int> ids)
+		{
+			if(ids.Distinct().Count() != ids.Count())
+			{
+				return BadRequest("Duplicate material IDs detected");
+			}
+
+			var allMaterialIds = _context.Materials.Select(c => c.ID);
+			foreach (int id in ids)
+			{
+				if (!allMaterialIds.Contains(id))
+				{
+					return BadRequest($"Unkown Material ID {id}");
+				}
+			}
+
+			return null;
 		}
 
 	}
