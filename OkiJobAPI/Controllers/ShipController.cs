@@ -62,6 +62,35 @@ namespace OkiJobAPI.Controllers
 		public int Amount { get; set; }
 	}
 
+	public class PatchShipDTO
+	{
+		[StringLength(50)]
+		public string? Name { get; set; } = null!;
+		[StringLength(50)]
+		public string? Designer { get; set; } = null!;
+		public string? Description { get; set; }
+		public ICollection<NewMaterialCostDTO>? MaterialCosts { get; set; }
+
+		//note: this does not apply material costs, which must be performed seperately
+		public void ApplyToShip(Ship ship)
+		{
+			if(Name is not null)
+			{
+				ship.Name = Name;
+			}
+
+			if(Designer is not null)
+			{
+				ship.Designer = Designer;
+			}
+
+			if(Description is not null)
+			{
+				ship.Description = Description == "" ? null : Description;
+			}
+		}
+	}
+
 	[Route("Ships")]
 	[ApiController]
 	public class ShipController : ControllerBase
@@ -129,6 +158,48 @@ namespace OkiJobAPI.Controllers
 
 		}
 
+		/// <summary>
+		/// Update an existing ship with new information
+		/// </summary>
+		/// <param name="id">The ID of the ship to updated</param>
+		/// <param name="updateShipDTO">The properties to alter. Properties that should be left unchanged can be omitted. To delte a description, make sure to submit and empty string</param>
+		/// <returns></returns>
+		/// <response code  ="204">Added</response>
+		/// <response code="400">Invalid format, or unrecognized or duplicate material ID</response>
+		/// <reponse code="404">Ship does not exist</reponse>
+		[HttpPatch("{id}")]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		public async Task<ActionResult<ShipWithCostsDTO>> PatchShip(int id, PatchShipDTO updateShipDTO)
+		{
+			Ship? ship = await _context.Ships.FindAsync(id);
+			if (ship is null)
+			{
+				return NotFound();
+			}
+
+			if (updateShipDTO.MaterialCosts is not null && CheckMaterialsExistAndNoDuplicates(updateShipDTO!.MaterialCosts.Select(c => c.MaterialID)) is BadRequestObjectResult res)
+			{
+				return res;
+			}
+
+			updateShipDTO.ApplyToShip(ship);
+
+			if(updateShipDTO.MaterialCosts is not null)
+			{
+				_context.MaterialCosts.RemoveRange(_context.MaterialCosts.Where(c => c.ShipID == id));
+				IEnumerable<MaterialCost> materialCosts = updateShipDTO.MaterialCosts.Select(c => new MaterialCost()
+				{ 
+					MaterialID = c.MaterialID, ShipID = ship.ID, Amount = c.Amount
+				});
+				_context.MaterialCosts.AddRange(materialCosts);
+			}
+			
+			await _context.SaveChangesAsync();
+
+			return CreatedAtAction("GetShip", new { id = ship.ID }, await ShipWithCostsDTO.FromShip(ship, _context));
+		}
 
 
 		// TODO: ship general put/post/patch/delete endpoints
