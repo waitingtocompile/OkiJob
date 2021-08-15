@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OkiJobAPI.Data;
@@ -104,7 +104,7 @@ namespace OkiJobAPI.Controllers
 		/// <summary>
 		/// Create a new ship with given costs.
 		/// </summary>
-		/// <param name="newShipDTO"></param>
+		/// <param name="newShipDTO">The new ship to create. Note that the "id" field in the ship object will be ignored, as will all "materialName" properties </param>
 		/// <returns></returns>
 		[HttpPost]
 		[ProducesResponseType(StatusCodes.Status200OK)]
@@ -112,16 +112,17 @@ namespace OkiJobAPI.Controllers
 		public async Task<ActionResult<ShipWithCostsDTO>> PostShip(ShipWithCostsDTO newShipDTO)
 		{
 			Ship ship = new Ship() { Name = newShipDTO.Name, Designer = newShipDTO.Designer, Description = newShipDTO.Description };
-			_context.Ships.Add(ship);
-			await _context.SaveChangesAsync();
-
+			
 			if (CheckMaterialsExistAndNoDuplicates(newShipDTO.MaterialCosts.Select(c => c.MaterialID)) is BadRequestObjectResult res)
 			{
 				return res;
 			}
 
+			_context.Ships.Add(ship);
+			await _context.SaveChangesAsync();
+
 			IEnumerable<MaterialCost> materialCosts = newShipDTO.MaterialCosts.Select(c => new MaterialCost() { MaterialID = c.MaterialID, ShipID = ship.ID, Amount = c.Amount });
-			_context.MaterialCosts.AddRange();
+			_context.MaterialCosts.AddRange(materialCosts);
 			await _context.SaveChangesAsync();
 
 			return CreatedAtAction("GetShip", new { id = ship.ID }, await ShipWithCostsDTO.FromShip(ship, _context));
