@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OkiJobAPI.Data;
@@ -201,8 +201,28 @@ namespace OkiJobAPI.Controllers
 			return CreatedAtAction("GetShip", new { id = ship.ID }, await ShipWithCostsDTO.FromShip(ship, _context));
 		}
 
+		/// <summary>
+		/// Delete a ship by ID
+		/// </summary>
+		/// <param name="id">ID of the ship to be deleted</param>
+		/// <returns></returns>
+		/// <response code  ="200">Ship deleted</response>
+		/// <reponse code="404">Ship does not exist</reponse>
+		[HttpDelete("{id}")]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		public async Task<IActionResult> DelteShip(int id)
+		{
+			Ship? ship = await _context.Ships.FindAsync(id);
+			if (ship is null)
+			{
+				return NotFound();
+			}
 
-		// TODO: ship general put/post/patch/delete endpoints
+			_context.Ships.Remove(ship);
+			await _context.SaveChangesAsync();
+			return Ok();
+		}
 
 		/// <summary>
 		/// Update the material costs of a ship.
